@@ -44,14 +44,7 @@ Data Issues I Fixed
 The raw data had real-world messiness built in:
 ProblemFixDates in 3 formatsPower Query locale conversion"₹3293.17" stored as textRemove symbol → convert to Decimal"delivered", "DELIVERED", "Dlvrd"Standardize to "Delivered"RTO reason filled on delivered ordersConditional null replacement35 duplicate rowsRemove DuplicatesPlatform: "meta", "Facebook Ads", "META"Replace Values → "Meta"
 
-Files
-data/
-  campaign_lookup.csv         → 15 campaigns (dimension)
-  marketing_data.csv          → Daily ad performance (fact)
-  sales_operations_data.csv   → 28,816 orders (fact)
 
-docs/
-  DATA_DICTIONARY.txt         → Full column reference
 
 screenshots/
   01_executive_dashboard.png
