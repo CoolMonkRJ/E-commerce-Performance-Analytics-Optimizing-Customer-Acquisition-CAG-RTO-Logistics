@@ -1,0 +1,494 @@
+================================================================================
+                DATA DICTIONARY - INDIAN DIGITAL MARKETING PROJECT
+================================================================================
+
+🏢 COMPANY CONTEXT:
+This dataset represents a D2C (Direct-to-Consumer) e-commerce company based in
+India selling fashion/electronics/FMCG products online. They run paid ads on
+Meta (Facebook/Instagram), Google Ads, and LinkedIn to acquire customers.
+
+Currency: Indian Rupees (₹)
+Date Range: November 1, 2024 - January 29, 2025 (90 days)
+Geography: Pan-India (15+ cities)
+
+================================================================================
+📁 FILE 1: campaign_lookup.csv
+================================================================================
+PURPOSE: Dimension table containing campaign metadata and targeting details
+
+COLUMN DETAILS:
+---------------
+Campaign_ID      | Text        | Primary Key - Unique campaign identifier (CMP_001 to CMP_015)
+Campaign_Name    | Text        | Descriptive campaign name (e.g., "Diwali_Sale_Google_Search")
+Platform         | Category    | Advertising platform where campaign ran
+Objective        | Category    | Campaign objective/goal
+Target_CAC       | Decimal     | Target Customer Acquisition Cost in ₹
+
+PLATFORM VALUES:
+- Google Ads: Search, Shopping, Display campaigns
+- Meta: Facebook + Instagram (Feed, Stories, Reels)
+- LinkedIn: B2B lead generation and brand awareness
+
+OBJECTIVE VALUES:
+- Conversion: Drive sales/purchases
+- Awareness: Brand visibility, reach
+- Lead Gen: Collect leads (B2B primarily)
+- App Installs: Drive mobile app downloads
+
+DATA QUALITY ISSUES (Intentional - You Need to Fix These!):
+------------------------------------------------------------
+❌ Contains 1 DUPLICATE campaign (same Campaign_ID appears twice)
+❌ Platform names INCONSISTENT: "Meta" vs "meta" vs "Facebook Ads" vs "META"
+❌ MISSING VALUES: Some Objective and Target_CAC values are NULL/blank
+❌ EXTRA SPACES: Campaign_IDs like " CMP_004 " and "CMP_008 "
+
+EXPECTED AFTER CLEANING:
+- 15 unique campaigns
+- Standardized platform names
+- No missing critical values
+- Trimmed Campaign_IDs
+
+================================================================================
+📁 FILE 2: marketing_data.csv
+================================================================================
+PURPOSE: Fact table containing daily ad campaign performance metrics from
+         advertising platforms (Meta Ads Manager, Google Ads Console)
+
+COLUMN DETAILS:
+---------------
+Date            | Date/Text   | Date when ads ran (MESSY: Multiple formats!)
+Campaign_ID     | Text        | Foreign Key → links to campaign_lookup.csv
+Platform        | Category    | Platform where ad ran (matches campaign)
+Ad_Spend        | Decimal/Text| Daily advertising spend in ₹ (MESSY: some have ₹ symbol!)
+Impressions     | Integer     | Number of times ad was displayed to users
+Clicks          | Integer     | Number of times users clicked on the ad
+
+BUSINESS LOGIC:
+--------------
+CTR (Click-Through Rate) = (Clicks / Impressions) × 100
+CPC (Cost Per Click) = Ad_Spend / Clicks
+
+EXPECTED CTR BY PLATFORM:
+- Google Ads: 2.5% - 5.0% (high intent, search-based)
+- Meta: 1.5% - 3.5% (social discovery)
+- LinkedIn: 1.0% - 2.0% (B2B, niche audience)
+
+DATA QUALITY ISSUES (You MUST Fix These!):
+------------------------------------------
+❌ DATE FORMATS ARE MIXED:
+   - Some: "2024-11-01" (YYYY-MM-DD)
+   - Some: "01/11/2024" (DD/MM/YYYY)
+   - Some: "11-01-2024" (MM-DD-YYYY)
+   → You need to standardize to proper Date type!
+
+❌ Ad_Spend HAS CURRENCY SYMBOL:
+   - Some: 3293.17 (clean number)
+   - Some: "₹3293.17" (text with symbol)
+   → Remove ₹ symbol and convert to Decimal!
+
+❌ MISSING VALUES:
+   - ~15 rows have NULL in Impressions, Clicks, or Ad_Spend
+   → Decide: Remove rows or impute?
+
+❌ NEGATIVE CLICKS:
+   - 3 rows have negative Clicks values (data entry error!)
+   → Filter out or fix to 0
+
+❌ DUPLICATE ROWS:
+   - 10 rows are duplicates (same Campaign_ID + Date)
+   → Remove duplicates!
+
+HIDDEN BUSINESS PATTERNS (Your Job to Discover!):
+-------------------------------------------------
+🔍 WEEKEND EFFECT:
+   Ad_Spend is ~50% HIGHER on Saturdays and Sundays
+   → Companies increase budget on weekends
+
+🔍 PLATFORM PERFORMANCE:
+   - Google Ads: Highest CTR, most expensive
+   - Meta: Medium CTR, medium cost
+   - LinkedIn: Lowest CTR, expensive per click (B2B premium)
+
+EXPECTED AFTER CLEANING:
+- All dates in Date format
+- All Ad_Spend in Decimal format
+- No missing values in critical columns
+- No negative values
+- No duplicates
+- ~1,035 clean rows
+
+================================================================================
+📁 FILE 3: sales_operations_data.csv
+================================================================================
+PURPOSE: Fact table containing order/transaction data from the company's
+         Shopify store / CRM system. This is where you calculate RTO!
+
+COLUMN DETAILS:
+---------------
+Order_ID        | Text        | Primary Key - Unique order ID (ORD_10001, ORD_10002...)
+Date            | Date/Text   | Order placed date (MESSY: Multiple formats!)
+Campaign_ID     | Text        | Foreign Key → which campaign drove this sale
+Order_Value     | Decimal/Text| Order amount in ₹ (MESSY: some have ₹ symbol!)
+Status          | Category    | Order fulfillment status
+RTO_Reason      | Text        | Reason for return (only if Status = RTO)
+Shipping_Cost   | Decimal     | Shipping cost in ₹ (company loses this on RTO!)
+Customer_City   | Category    | Customer's delivery city
+Payment_Method  | Category    | Payment type (COD or Prepaid)
+
+STATUS VALUES (What Happens to Orders):
+---------------------------------------
+Delivered      → Order successfully delivered to customer ✅
+                 Company gets Order_Value revenue
+                 
+RTO            → Return to Origin (customer refused/rejected) ❌
+                 Company LOSES Order_Value + Shipping_Cost
+                 This is the BIGGEST metric to track!
+                 
+Cancelled      → Order cancelled before shipping 🚫
+                 No revenue, minimal cost
+
+RTO_REASON VALUES (Why customers refuse orders):
+------------------------------------------------
+- Customer Refused (didn't want it anymore)
+- Wrong Address (couldn't deliver)
+- Fake Order (COD fraud)
+- Customer Not Reachable (phone off)
+- Product Damaged (quality issue)
+- Customer Changed Mind (impulse buy regret)
+
+PAYMENT_METHOD IMPACT:
+---------------------
+COD (Cash on Delivery):
+  → Customer pays when order arrives
+  → HIGHER RTO RATE (~25-30%)
+  → Reason: Easy to refuse, no commitment
+
+Prepaid:
+  → Customer already paid online
+  → LOWER RTO RATE (~8-12%)
+  → Reason: Financial commitment, less likely to refuse
+
+DATA QUALITY ISSUES (Clean This Carefully!):
+--------------------------------------------
+❌ STATUS HAS INCONSISTENT VALUES:
+   - "Delivered" vs "delivered" vs "DELIVERED" vs "Dlvrd" vs "Completed"
+   - "RTO" vs "rto" vs "Return to Origin" vs "Returned"
+   - "Cancelled" vs "cancelled" vs "CANCELLED" vs "Cancel" vs "Canceled"
+   → Standardize to: "Delivered", "RTO", "Cancelled"
+
+❌ DATE FORMATS ARE MIXED:
+   - "2024-11-01", "01/11/2024", "01-11-2024"
+   → Convert all to Date type
+
+❌ Order_Value HAS CURRENCY:
+   - Some: 1250.50
+   - Some: "₹ 1250.50"
+   - Some: "-₹ 1250.50" (refunds!)
+   → Remove ₹ symbol, handle negatives
+
+❌ RTO_Reason FILLED WHEN STATUS = DELIVERED:
+   - 10 rows have RTO_Reason even though Status is "Delivered"
+   → This is DATA ENTRY ERROR! Replace with NULL
+
+❌ MISSING Campaign_ID:
+   - 20 orders have NULL Campaign_ID (attribution failed)
+   → Decide: Remove or create "Unknown" campaign?
+
+❌ EXTRA SPACES in Order_ID:
+   - " ORD_10001" or "ORD_10001 "
+   → Trim spaces!
+
+❌ DUPLICATE ORDERS:
+   - 25 orders appear twice (system recorded same order multiple times)
+   → Remove duplicates!
+
+❌ NEGATIVE Order_Value:
+   - 5 orders have negative values (refunds recorded wrongly)
+   → These should be separate refund records, filter out
+
+HIDDEN BUSINESS PATTERNS (THE MONEY INSIGHTS!):
+-----------------------------------------------
+🔥 THE META TRAP (Most Important Finding!):
+   Platform: Meta (Facebook/Instagram)
+   - CAC: ₹300-500 (CHEAP! Looks great!)
+   - RTO Rate: ~28% (DISASTER! Hidden cost!)
+   - Why: Impulse buyers on social media
+   - Reality: Cheap CAC but HIGH returns = Not profitable!
+
+💰 THE GOOGLE WIN:
+   Platform: Google Ads
+   - CAC: ₹800-1,000 (EXPENSIVE! Looks bad!)
+   - RTO Rate: ~5% (EXCELLENT! High quality!)
+   - Why: High intent search users
+   - Reality: Expensive CAC but LOW returns = Actually profitable!
+
+🏢 THE LINKEDIN PREMIUM:
+   Platform: LinkedIn
+   - CAC: ₹1,500-2,000 (VERY EXPENSIVE!)
+   - RTO Rate: ~3% (BEST quality!)
+   - Why: B2B, decision-makers
+   - Reality: Premium customers, almost no returns
+
+📅 THE WEEKEND CHAOS:
+   - Weekends: 50% MORE Ad Spend + 40% MORE RTO
+   - Why: Impulse weekend shoppers have buyer's remorse on Monday
+   - Action: Maybe reduce weekend spend or target better?
+
+💳 THE COD PROBLEM:
+   - COD Orders: ~27% RTO rate
+   - Prepaid Orders: ~10% RTO rate
+   - Why: COD = no commitment, easy to refuse
+   - Action: Incentivize prepaid (discounts, faster delivery)
+
+EXPECTED AFTER CLEANING:
+- ~28,790 clean orders (after removing duplicates)
+- Standardized Status values
+- All dates in Date format
+- No RTO_Reason when Status ≠ RTO
+- No missing Campaign_ID (or marked as "Unknown")
+- No negative values
+
+================================================================================
+📊 KEY METRICS YOU'LL CALCULATE (DAX Measures)
+================================================================================
+
+BASIC METRICS:
+-------------
+1. Total Ad Spend = SUM(marketing_data[Ad_Spend])
+2. Total Orders = COUNTROWS(sales_operations_data)
+3. Delivered Orders = CALCULATE(COUNTROWS(sales), Status = "Delivered")
+4. RTO Orders = CALCULATE(COUNTROWS(sales), Status = "RTO")
+5. Cancelled Orders = CALCULATE(COUNTROWS(sales), Status = "Cancelled")
+
+PERFORMANCE METRICS:
+-------------------
+6. RTO% = (RTO Orders / Total Orders) × 100
+   → CRITICAL: Lower is better! Target: <15%
+
+7. Total Revenue = CALCULATE(SUM(Order_Value), Status = "Delivered")
+   → Only delivered orders generate revenue!
+
+8. Lost Revenue (RTO) = CALCULATE(SUM(Order_Value + Shipping_Cost), Status = "RTO")
+   → This is money LOST on returns!
+
+ACQUISITION METRICS:
+-------------------
+9. CAC (Customer Acquisition Cost) = Total Ad Spend / Delivered Orders
+   → How much it costs to acquire ONE successful customer
+
+10. Effective CAC = Total Ad Spend / (Total Orders - RTO Orders - Cancelled Orders)
+    → More accurate: excludes failed orders
+
+11. ROAS (Return on Ad Spend) = Total Revenue / Total Ad Spend
+    → ₹5 ROAS = For every ₹1 spent, got ₹5 back
+    → Target: >3.0x minimum
+
+ADVANCED METRICS:
+----------------
+12. Net Profit = Total Revenue - Total Ad Spend - SUM(Shipping_Cost for Delivered)
+    → The actual profit after ALL costs
+
+13. Profit Per Order = Net Profit / Delivered Orders
+
+14. Platform Efficiency Score = (ROAS × (1 - RTO%))
+    → Combines revenue AND quality
+
+================================================================================
+🎯 YOUR COMPLETE ETL + MODELING + DAX WORKFLOW
+================================================================================
+
+PHASE 1: EXTRACT (Power Query - Get Data)
+-----------------------------------------
+1. Load all 3 CSV files:
+   - campaign_lookup.csv
+   - marketing_data.csv
+   - sales_operations_data.csv
+2. Click "Transform Data" (don't load directly!)
+
+PHASE 2: TRANSFORM (Power Query - Clean Data)
+---------------------------------------------
+For campaign_lookup.csv:
+□ Remove duplicate row (same Campaign_ID)
+□ Standardize Platform:
+  - Replace "meta", "facebook ads", "fb ads", "META" → "Meta"
+  - Replace "google ads", "google", "GDN" → "Google Ads"
+  - Replace "linkedin", "LINKEDIN" → "LinkedIn"
+□ Replace NULL in Objective with "Unknown"
+□ Replace NULL in Target_CAC with 0 or average
+□ Trim Campaign_ID (remove extra spaces)
+□ Rename to: DimCampaign
+
+For marketing_data.csv:
+□ Fix Date column:
+  - Convert all formats to proper Date type
+  - Use "Using Locale" if needed
+□ Fix Ad_Spend:
+  - Replace Values: Remove "₹" symbol
+  - Change type to Decimal Number
+□ Handle missing values:
+  - Remove rows with NULL Impressions/Clicks/Ad_Spend
+  - Or replace with 0 (document your decision)
+□ Filter out negative Clicks (Clicks >= 0)
+□ Remove duplicate rows (same Campaign_ID + Date)
+□ Create calculated columns:
+  - CTR = (Clicks / Impressions) × 100
+  - CPC = Ad_Spend / Clicks
+□ Rename to: FactMarketing
+
+For sales_operations_data.csv:
+□ Fix Date column (same as marketing)
+□ Fix Order_Value:
+  - Replace Values: Remove "₹" and spaces
+  - Filter out negative values
+  - Change type to Decimal Number
+□ Standardize Status:
+  - Replace "delivered", "DELIVERED", "Dlvrd", "Completed" → "Delivered"
+  - Replace "rto", "Return to Origin", "Returned" → "RTO"
+  - Replace "cancelled", "CANCELLED", "Cancel", "Canceled" → "Cancelled"
+□ Clean RTO_Reason:
+  - IF Status = "Delivered" OR "Cancelled" THEN NULL
+  - Only keep for Status = "RTO"
+□ Trim Order_ID (remove spaces)
+□ Handle missing Campaign_ID:
+  - Replace NULL → "Unknown" (or remove rows)
+□ Remove duplicate Order_IDs
+□ Create calculated columns:
+  - Order_Category = IF Order_Value > 2000 THEN "Premium" ELSE "Regular"
+  - Is_Weekend = IF DayOfWeek(Date) IN {6,7} THEN "Weekend" ELSE "Weekday"
+  - Net_Order_Value = Order_Value - Shipping_Cost
+□ Rename to: FactSales
+
+PHASE 3: CREATE ADDITIONAL DIMENSIONS
+-------------------------------------
+Create DimDate (from scratch using M code):
+□ Date range: 2024-11-01 to 2025-01-29
+□ Columns: Date, Year, Quarter, MonthNum, MonthName, DayOfWeek, DayName, IsWeekend
+□ Mark as Date Table in Power BI
+
+Create DimCity (from FactSales):
+□ Extract unique Customer_City values
+□ Add columns: State, Region (you can map manually or leave for later)
+
+PHASE 4: DATA MODEL (Relationships)
+-----------------------------------
+Create Star Schema:
+
+         DimCampaign          DimDate            DimCity
+         ┌─────────┐       ┌─────────┐       ┌─────────┐
+         │Camp_ID* │       │Date*    │       │City*    │
+         │Platform │       │Year     │       └────┬────┘
+         │Objective│       │Quarter  │            │
+         └────┬────┘       │Month    │            │
+              │            └────┬────┘            │
+              │                 │                 │
+         ┌────▼────┐       ┌────▼────┐           │
+         │FactMktg │       │FactSales│◄──────────┘
+         ├─────────┤       ├─────────┤
+         │Camp_ID  │       │Order_ID │
+         │Date     │       │Date     │
+         │Ad_Spend │       │Camp_ID  │
+         │Clicks   │       │Status   │
+         └─────────┘       │Order_Val│
+                           └─────────┘
+
+Relationships:
+1. FactMarketing[Campaign_ID] → DimCampaign[Campaign_ID] (Many:1, Single)
+2. FactSales[Campaign_ID] → DimCampaign[Campaign_ID] (Many:1, Single)
+3. FactMarketing[Date] → DimDate[Date] (Many:1, Single)
+4. FactSales[Date] → DimDate[Date] (Many:1, Single)
+5. FactSales[Customer_City] → DimCity[City] (Many:1, Single)
+
+PHASE 5: DAX MEASURES (Create These!)
+-------------------------------------
+See "KEY METRICS YOU'LL CALCULATE" section above
+Start with basic metrics, then build advanced ones
+
+PHASE 6: VISUALIZATIONS
+-----------------------
+Dashboard 1: Executive Overview
+- KPI Cards: Total Orders, RTO%, ROAS, CAC
+- Line Chart: Daily orders trend
+- Bar Chart: Revenue by Platform
+- Donut Chart: Order Status breakdown
+
+Dashboard 2: Platform Analysis (THE KEY INSIGHT!)
+- Table: Platform comparison (CAC, RTO%, ROAS, Profit)
+- Scatter Plot: CAC vs RTO% (Google = expensive but quality)
+- Stacked Bar: Orders by Platform + Status
+
+Dashboard 3: Campaign Performance
+- Table: Top 10 campaigns by ROAS
+- Waterfall: Profit breakdown
+- Slicer: Filter by Platform, Date, Status
+
+================================================================================
+🎯 INTERVIEW TALKING POINTS (Use This Dataset in Interviews!)
+================================================================================
+
+"In my digital marketing analytics project, I worked with real-world messy
+data from an Indian D2C e-commerce company running ads on Meta, Google, and
+LinkedIn.
+
+The dataset had typical data quality issues - inconsistent date formats,
+currency symbols mixed with numbers, duplicate records, and missing values -
+which I cleaned in Power Query following a systematic ETL process.
+
+The most interesting finding was the 'Meta Trap': Meta campaigns had the
+lowest CAC at ₹300-500, which looked great on paper, but had a 28% RTO rate
+compared to Google's 5%. After calculating effective CAC and factoring in lost
+shipping costs, Google Ads was actually MORE profitable despite being more
+expensive upfront.
+
+I also discovered that weekend campaigns had 40% higher RTO rates, suggesting
+impulse buying behavior, and COD orders had nearly 3x the RTO rate of prepaid.
+
+I built a star schema model with separate fact tables for marketing spend and
+sales, created 15+ DAX measures including CAC, ROAS, and platform efficiency
+scores, and designed executive dashboards that helped identify which channels
+drove profitable growth vs just cheap clicks.
+
+This project taught me that low acquisition cost doesn't always mean high
+profitability - you have to factor in customer quality, return rates, and
+lifetime value."
+
+================================================================================
+🔥 FINAL TIPS FOR SUCCESS
+================================================================================
+
+1. DOCUMENT EVERYTHING:
+   - Why you removed certain rows
+   - How you handled missing values
+   - Business logic behind calculated columns
+
+2. TEST YOUR DAX:
+   - Use small filters to verify measures calculate correctly
+   - Check totals add up
+   - Compare with manual Excel calculations
+
+3. TELL THE STORY:
+   - Don't just show numbers
+   - Explain the Meta Trap finding
+   - Make recommendations
+
+4. BE INTERVIEW-READY:
+   - "Walk me through your data cleaning process"
+   - "How did you handle missing Campaign_IDs?"
+   - "What's the most surprising insight you found?"
+   - "How would you improve data collection?"
+
+5. SHOW BUSINESS THINKING:
+   - This isn't just a Power BI exercise
+   - It's about driving profitable growth
+   - Understand marketing metrics deeply
+
+================================================================================
+                                 GOOD LUCK! 🚀
+================================================================================
+
+You have everything you need to master ETL, Data Modeling, DAX, and
+Visualization. This is real-world data with real-world problems.
+
+Your job: Clean it, model it, analyze it, and find the insights that will
+make you stand out in interviews.
+
+Now go build something amazing! 💪
