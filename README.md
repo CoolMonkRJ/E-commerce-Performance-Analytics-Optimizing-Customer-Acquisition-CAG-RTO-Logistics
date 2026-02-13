@@ -53,18 +53,22 @@ The raw data had real-world messiness built in:
 ProblemFixDates in 3 formatsPower Query locale conversion"₹3293.17" stored as textRemove symbol → convert to Decimal"delivered", "DELIVERED", "Dlvrd"Standardize to "Delivered"RTO reason filled on delivered ordersConditional null replacement35 duplicate rowsRemove DuplicatesPlatform: "meta", "Facebook Ads", "META"Replace Values → "Meta"
 
 
+## 📸 Dashboards
 
-screenshots:
+### Executive Overview
+![Executive Overview](Dashboard/executive_overview.png)
 
-Dashboard/Key Insights page.png
+### Finance & Time Analysis
+![Finance & Time Analysis](Dashboard/finance_time_analysis.png)
 
- Dashboard/Campaign Performance.png
+### Campaign Performance
+![Campaign Performance](Dashboard/campaign_performance.png)
 
-Dashboard/Data Model.png
+### Key Insights
+![Key Insights](Dashboard/key_insights.png)
 
- Dashboard/Executive Overview.png
-
- Dashboard/Finance & Time Analysis.png
+### Data Model
+![Data Model](Dashboard/data_model.png)
 
  
 
