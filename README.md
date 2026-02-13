@@ -54,13 +54,21 @@ ProblemFixDates in 3 formatsPower Query locale conversion"₹3293.17" stored as 
 
 
 
-screenshots/
-  01_executive_dashboard.png
-  02_finance_analysis.png
-  03_campaign_performance.png
-  04_key_insights.png
+screenshots:
 
-digital_marketing_analytics.pbix
+Dashboard/Key Insights page.png
+
+ Dashboard/Campaign Performance.png
+
+Dashboard/Data Model.png
+
+ Dashboard/Executive Overview.png
+
+ Dashboard/Finance & Time Analysis.png
+
+ 
+
+PowerBI/END-TO~1.PBI
 
 Tools
 Power BI · Power Query (M) · DAX · Star Schema
